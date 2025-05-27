@@ -55,17 +55,34 @@ type UpdateRequest struct {
 }
 
 var (
-	nodeInfo = prometheus.NewGaugeVec(
+	nodeStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "node_value_updates",
-			Help: "Number of value updates for each node",
+			Name: "node_status",
+			Help: "Node status (0=off,1=blue,2=yellow,3=green)",
+		},
+		[]string{"node_id", "message_type"}, // 2 лейбла
+	)
+	messageCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "message_count",
+			Help: "Count of processed messages by type",
 		},
 		[]string{"node_id", "message_type"},
+	)
+	propagationTime = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "message_propagation_time",
+			Help:    "Time taken for message propagation in seconds",
+			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 5},
+		},
+		[]string{"message_type", "source_node"},
 	)
 )
 
 func init() {
-	prometheus.MustRegister(nodeInfo)
+	prometheus.MustRegister(nodeStatus)
+	prometheus.MustRegister(messageCounter)
+	prometheus.MustRegister(propagationTime)
 }
 
 func NewNode(id string, neighbors []string, kafkaTopics []string, groupID string, isSuperNode bool) *Node {
@@ -84,13 +101,7 @@ func (n *Node) updateValue(newValue string, msgType MessageType) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	n.Value = newValue
-	nodeInfo.WithLabelValues(n.ID, string(msgType)).Inc()
-}
-
-func (n *Node) getValue() string {
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-	return n.Value
+	nodeStatus.WithLabelValues(n.ID, string(msgType)).Set(1) // Пример значения
 }
 
 func (n *Node) handleSingleCast(msg Message) {
@@ -109,6 +120,7 @@ func (n *Node) handleSingleCast(msg Message) {
 			http.Post(neighborURL+"/message", "application/json", bytes.NewBuffer(jsonData))
 		}(neighbor)
 	}
+	messageCounter.WithLabelValues(n.ID, string(SingleCast)).Inc()
 }
 
 func (n *Node) handleMultiCast(msg Message) {
@@ -118,6 +130,7 @@ func (n *Node) handleMultiCast(msg Message) {
 
 	n.updateValue(msg.Value, MultiCast)
 	n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] = true
+	messageCounter.WithLabelValues(n.ID, string(MultiCast)).Inc()
 }
 
 func (n *Node) handleBroadCast(msg Message) {
@@ -141,6 +154,7 @@ func (n *Node) handleBroadCast(msg Message) {
 			Value: jsonData,
 		})
 	}
+	messageCounter.WithLabelValues(n.ID, string(BroadCast)).Inc()
 }
 
 func (n *Node) handleGossip(msg Message) {
@@ -166,10 +180,27 @@ func (n *Node) handleGossip(msg Message) {
 			http.Post(neighborURL+"/message", "application/json", bytes.NewBuffer(jsonData))
 		}(neighbors[i])
 	}
+	messageCounter.WithLabelValues(n.ID, string(Gossip)).Inc()
+}
+
+func waitForKafka() {
+	for {
+		conn, err := kafka.Dial("tcp", "kafka:29092")
+		if err == nil {
+			conn.Close()
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func (n *Node) startHTTPServer(port string) {
 	r := mux.NewRouter()
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("Recovered from panic: %v", err)
+		}
+	}()
 
 	r.HandleFunc("/value", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
@@ -254,7 +285,7 @@ func (n *Node) startHTTPServer(port string) {
 	}
 }
 
-func (n *Node) startKafkaConsumer() {
+func (n *Node) startKafkaConsumer(ctx context.Context) {
 	// Multicast consumer
 	go func() {
 		reader := kafka.NewReader(kafka.ReaderConfig{
@@ -265,10 +296,14 @@ func (n *Node) startKafkaConsumer() {
 		defer reader.Close()
 
 		for {
-			msg, err := reader.ReadMessage(context.Background())
+			msg, err := reader.ReadMessage(ctx)
 			if err != nil {
-				log.Printf("Error reading message: %v", err)
-				continue
+				if kafkaErr, ok := err.(kafka.Error); ok && kafkaErr.Temporary() {
+					log.Printf("Temporary Kafka error: %v", err)
+					continue
+				}
+				log.Printf("Fatal Kafka error: %v", err)
+				break
 			}
 
 			var message Message
@@ -308,6 +343,10 @@ func (n *Node) startKafkaConsumer() {
 	}()
 }
 
+func (n *Node) getValue() string {
+	return n.Value
+}
+
 func main() {
 	nodeID := os.Getenv("NODE_ID")
 	if nodeID == "" {
@@ -323,6 +362,7 @@ func main() {
 	if groupID == "" {
 		groupID = "group-1"
 	}
+	ctx := context.Background()
 
 	isSuperNode := os.Getenv("IS_SUPER_NODE") == "true"
 
@@ -332,7 +372,7 @@ func main() {
 	node := NewNode(nodeID, neighbors, kafkaTopics, groupID, isSuperNode)
 
 	// Start Kafka consumer
-	go node.startKafkaConsumer()
+	go node.startKafkaConsumer(ctx)
 
 	// Start HTTP server
 	go node.startHTTPServer(port)
