@@ -1,66 +1,24 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"log"
-	"math/rand"
-	"net/http"
 	"os"
 	"os/signal"
-	"sync"
+	"strconv"
+	"strings"
 	"syscall"
-	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/segmentio/kafka-go"
 )
-
-type MessageType string
-
-const (
-	SingleCast MessageType = "single_cast"
-	MultiCast  MessageType = "multicast"
-	BroadCast  MessageType = "broadcast"
-	Gossip     MessageType = "gossip"
-)
-
-type Message struct {
-	Type      MessageType `json:"type"`
-	Value     string      `json:"value"`
-	SourceID  string      `json:"source_id"`
-	GroupID   string      `json:"group_id,omitempty"`
-	Timestamp int64       `json:"timestamp"`
-}
-
-type Node struct {
-	ID          string   `json:"id"`
-	Value       string   `json:"value"`
-	Neighbors   []string `json:"neighbors"`
-	KafkaTopics []string `json:"kafka_topics"`
-	GroupID     string   `json:"group_id"`
-	IsSuperNode bool     `json:"is_super_node"`
-	mu          sync.RWMutex
-	processed   map[string]bool
-}
-
-type UpdateRequest struct {
-	Value   string      `json:"value"`
-	Type    MessageType `json:"type"`
-	GroupID string      `json:"group_id,omitempty"`
-}
 
 var (
-	nodeStatus = prometheus.NewGaugeVec(
+	nodeValueUpdates = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "node_status",
-			Help: "Node status (0=off,1=blue,2=yellow,3=green)",
+			Name: "node_value_updates",
+			Help: "Node status (0=off,1=singlecast,2=multicast,3=broadcast,4=gossip)",
 		},
-		[]string{"node_id", "message_type"}, // 2 лейбла
+		[]string{"node_id"},
 	)
 	messageCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -77,274 +35,66 @@ var (
 		},
 		[]string{"message_type", "source_node"},
 	)
+	healthStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "node_health",
+			Help: "Node health status (1=healthy, 0=unhealthy)",
+		},
+		[]string{"node_id"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(nodeStatus)
+	log.Println("Registering Prometheus metrics...")
+	prometheus.MustRegister(nodeValueUpdates)
 	prometheus.MustRegister(messageCounter)
 	prometheus.MustRegister(propagationTime)
+	prometheus.MustRegister(healthStatus)
+	log.Println("Prometheus metrics registered successfully")
 }
 
-func NewNode(id string, neighbors []string, kafkaTopics []string, groupID string, isSuperNode bool) *Node {
-	return &Node{
-		ID:          id,
-		Value:       "initial",
-		Neighbors:   neighbors,
-		KafkaTopics: kafkaTopics,
-		GroupID:     groupID,
-		IsSuperNode: isSuperNode,
-		processed:   make(map[string]bool),
-	}
+func (n *Node) resetMetrics() {
+	// Сбрасываем метрику для данного узла (удаляем все временные ряды с этой меткой node_id)
+	nodeValueUpdates.DeleteLabelValues(n.ID)
 }
 
 func (n *Node) updateValue(newValue string, msgType MessageType) {
+	log.Printf("Updating value to %s with type %s", newValue, msgType)
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	n.Value = newValue
-	nodeStatus.WithLabelValues(n.ID, string(msgType)).Set(1) // Пример значения
-}
 
-func (n *Node) handleSingleCast(msg Message) {
-	if n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] {
-		return
+	// Сбрасываем старые метрики для этого узла
+	n.resetMetrics()
+
+	// Обновляем метрики
+	status := 1.0
+	switch msgType {
+	case SingleCast:
+		status = 1.0
+	case MultiCast:
+		status = 2.0
+	case BroadCast:
+		status = 3.0
+	case Gossip:
+		status = 4.0
 	}
-
-	n.updateValue(msg.Value, SingleCast)
-	n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] = true
-
-	// Отправляем сообщение соседним нодам через HTTP
-	for _, neighbor := range n.Neighbors {
-		go func(neighborURL string) {
-			msg.SourceID = n.ID
-			jsonData, _ := json.Marshal(msg)
-			http.Post(neighborURL+"/message", "application/json", bytes.NewBuffer(jsonData))
-		}(neighbor)
-	}
-	messageCounter.WithLabelValues(n.ID, string(SingleCast)).Inc()
-}
-
-func (n *Node) handleMultiCast(msg Message) {
-	if n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] {
-		return
-	}
-
-	n.updateValue(msg.Value, MultiCast)
-	n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] = true
-	messageCounter.WithLabelValues(n.ID, string(MultiCast)).Inc()
-}
-
-func (n *Node) handleBroadCast(msg Message) {
-	if n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] {
-		return
-	}
-
-	n.updateValue(msg.Value, BroadCast)
-	n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] = true
-
-	// Если это супер-нода, отправляем сообщение в соседние группы
-	if n.IsSuperNode {
-		writer := kafka.NewWriter(kafka.WriterConfig{
-			Brokers: []string{"kafka:29092"},
-			Topic:   "broadcast-" + msg.GroupID,
-		})
-		defer writer.Close()
-
-		jsonData, _ := json.Marshal(msg)
-		writer.WriteMessages(context.Background(), kafka.Message{
-			Value: jsonData,
-		})
-	}
-	messageCounter.WithLabelValues(n.ID, string(BroadCast)).Inc()
-}
-
-func (n *Node) handleGossip(msg Message) {
-	if n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] {
-		return
-	}
-
-	n.updateValue(msg.Value, Gossip)
-	n.processed[fmt.Sprintf("%s_%d", msg.SourceID, msg.Timestamp)] = true
-
-	// Отправляем сообщение случайному подмножеству соседей
-	neighbors := make([]string, len(n.Neighbors))
-	copy(neighbors, n.Neighbors)
-	rand.Shuffle(len(neighbors), func(i, j int) {
-		neighbors[i], neighbors[j] = neighbors[j], neighbors[i]
-	})
-
-	// Отправляем примерно половине соседей
-	for i := 0; i < len(neighbors)/2; i++ {
-		go func(neighborURL string) {
-			msg.SourceID = n.ID
-			jsonData, _ := json.Marshal(msg)
-			http.Post(neighborURL+"/message", "application/json", bytes.NewBuffer(jsonData))
-		}(neighbors[i])
-	}
-	messageCounter.WithLabelValues(n.ID, string(Gossip)).Inc()
-}
-
-func waitForKafka() {
-	for {
-		conn, err := kafka.Dial("tcp", "kafka:29092")
-		if err == nil {
-			conn.Close()
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-}
-
-func (n *Node) startHTTPServer(port string) {
-	r := mux.NewRouter()
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("Recovered from panic: %v", err)
-		}
-	}()
-
-	r.HandleFunc("/value", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode(map[string]string{"value": n.getValue()})
-			return
-		}
-
-		if r.Method == http.MethodPost {
-			var req UpdateRequest
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-
-			msg := Message{
-				Type:      req.Type,
-				Value:     req.Value,
-				SourceID:  n.ID,
-				GroupID:   req.GroupID,
-				Timestamp: time.Now().UnixNano(),
-			}
-
-			switch req.Type {
-			case SingleCast:
-				n.handleSingleCast(msg)
-			case MultiCast:
-				// Отправляем в Kafka топик для multicast
-				writer := kafka.NewWriter(kafka.WriterConfig{
-					Brokers: []string{"kafka:29092"},
-					Topic:   "multicast",
-				})
-				defer writer.Close()
-
-				jsonData, _ := json.Marshal(msg)
-				writer.WriteMessages(context.Background(), kafka.Message{
-					Value: jsonData,
-				})
-			case BroadCast:
-				// Отправляем в Kafka топик для broadcast
-				writer := kafka.NewWriter(kafka.WriterConfig{
-					Brokers: []string{"kafka:29092"},
-					Topic:   "broadcast-" + n.GroupID,
-				})
-				defer writer.Close()
-
-				jsonData, _ := json.Marshal(msg)
-				writer.WriteMessages(context.Background(), kafka.Message{
-					Value: jsonData,
-				})
-			case Gossip:
-				n.handleGossip(msg)
-			}
-
-			w.WriteHeader(http.StatusOK)
-		}
-	})
-
-	r.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			var msg Message
-			if err := json.NewDecoder(r.Body).Decode(&msg); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-
-			switch msg.Type {
-			case SingleCast:
-				n.handleSingleCast(msg)
-			case Gossip:
-				n.handleGossip(msg)
-			}
-
-			w.WriteHeader(http.StatusOK)
-		}
-	})
-
-	r.Handle("/metrics", promhttp.Handler())
-
-	log.Printf("Starting HTTP server on port %s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (n *Node) startKafkaConsumer(ctx context.Context) {
-	// Multicast consumer
-	go func() {
-		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers: []string{"kafka:29092"},
-			Topic:   "multicast",
-			GroupID: n.ID,
-		})
-		defer reader.Close()
-
-		for {
-			msg, err := reader.ReadMessage(ctx)
-			if err != nil {
-				if kafkaErr, ok := err.(kafka.Error); ok && kafkaErr.Temporary() {
-					log.Printf("Temporary Kafka error: %v", err)
-					continue
-				}
-				log.Printf("Fatal Kafka error: %v", err)
-				break
-			}
-
-			var message Message
-			if err := json.Unmarshal(msg.Value, &message); err != nil {
-				log.Printf("Error unmarshaling message: %v", err)
-				continue
-			}
-
-			n.handleMultiCast(message)
-		}
-	}()
-
-	// Broadcast consumer
-	go func() {
-		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers: []string{"kafka:29092"},
-			Topic:   "broadcast-" + n.GroupID,
-			GroupID: n.ID,
-		})
-		defer reader.Close()
-
-		for {
-			msg, err := reader.ReadMessage(context.Background())
-			if err != nil {
-				log.Printf("Error reading message: %v", err)
-				continue
-			}
-
-			var message Message
-			if err := json.Unmarshal(msg.Value, &message); err != nil {
-				log.Printf("Error unmarshaling message: %v", err)
-				continue
-			}
-
-			n.handleBroadCast(message)
-		}
-	}()
+	log.Printf("Setting node_value_updates metric for node %s to %f", n.ID, status)
+	nodeValueUpdates.WithLabelValues(n.ID).Set(status)
+	log.Printf("Node %s updated value to %s via %s", n.ID, newValue, msgType)
 }
 
 func (n *Node) getValue() string {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
 	return n.Value
+}
+
+func parseNeighbors(neighborsStr string) []string {
+	if neighborsStr == "" {
+		return []string{}
+	}
+	return strings.Split(neighborsStr, ",")
 }
 
 func main() {
@@ -362,23 +112,55 @@ func main() {
 	if groupID == "" {
 		groupID = "group-1"
 	}
-	ctx := context.Background()
 
+	numOfGroupsStr := os.Getenv("NUM_OF_GROUPS")
+	numofGroups, _ := strconv.Atoi(numOfGroupsStr)
 	isSuperNode := os.Getenv("IS_SUPER_NODE") == "true"
 
-	neighbors := []string{"http://node2:8081", "http://node3:8082"}
-	kafkaTopics := []string{"multicast", "broadcast-" + groupID}
+	// Получаем список соседей из переменной окружения
+	neighborsStr := os.Getenv("NEIGHBORS")
+	neighbors := parseNeighbors(neighborsStr)
 
-	node := NewNode(nodeID, neighbors, kafkaTopics, groupID, isSuperNode)
+	numOfNodesStr := os.Getenv("NUM_OF_NODES")
+	numOfNodes, err := strconv.Atoi(numOfNodesStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("Starting node %s on port %s, group %s, super_node: %v", nodeID, port, groupID, isSuperNode)
+	log.Printf("Neighbors: %v", neighbors)
+
+	// Ждем готовности Kafka
+	waitForKafka()
+
+	kafkaTopics := []string{"multicast", "broadcast-" + groupID}
+	node := NewNode(
+		nodeID,
+		numOfNodes,
+		neighbors,
+		kafkaTopics,
+		groupID,
+		isSuperNode,
+		port,
+		numofGroups,
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Start Kafka consumer
 	go node.startKafkaConsumer(ctx)
 
-	// Start HTTP server
+	// Start HTTP server in goroutine
 	go node.startHTTPServer(port)
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	log.Printf("Node %s is running. Press Ctrl+C to stop.", nodeID)
 	<-sigChan
+
+	log.Printf("Shutting down node %s...", nodeID)
+	cancel()
 }

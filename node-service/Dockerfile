@@ -1,12 +1,33 @@
-FROM golang:1.24.3-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /app
-COPY . .
+
+# Устанавливаем curl для health check
+RUN apk add --no-cache curl ca-certificates
+
+# Копируем go mod файлы
+COPY go.mod go.sum ./
+
+# Загружаем зависимости
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o node-service
+
+# Копируем исходный код
+COPY . .
+
+# Собираем приложение
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/node-service .
+
+RUN apk --no-cache add ca-certificates curl
+
+WORKDIR /root/
+
+# Копируем собранное приложение
+COPY --from=builder /app/main .
+
+# Открываем порт
 EXPOSE 8080
-CMD ["./node-service"] 
+
+# Запускаем приложение
+CMD ["./main"]

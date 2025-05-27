@@ -1,17 +1,21 @@
-# Запуск бенчмарков и сохранение результатов
-bench:
-	@echo "Running benchmarks..."
-	@go test -bench=. -benchmem -count=10 -benchtime=10x ./simulator > benchmark_results.txt
+# запуск с нуля
+boot:
+	docker-compose down -v
+	docker volume prune -f
+	docker-compose up -d --build
 
-# Анализ результатов с помощью benchstat
-benchstat: benchmark_results.txt
-	@echo "Analyzing benchmark results..."
-	@go install golang.org/x/perf/cmd/benchstat@latest
-	@benchstat benchmark_results.txt > benchstat.txt
+# SingleCast
+sc_node0:
+	curl -X POST http://localhost:8080/value -d '{"value":"test","type":"single_cast"}'
 
-# Очистка результатов
-clean:
-	@rm -f benchmark_results.txt
+# MultiCast
+mc_node0:
+	curl -X POST http://localhost:8080/value -d '{"value":"test","type":"multicast"}'
 
-# Запуск всего процесса
-all: clean bench benchstat 
+# Broadcast	
+bc_node0:
+	curl -X POST http://localhost:8080/value -d '{"value":"test","type":"broadcast"}'
+
+# Gossip
+gossip_node0:
+	curl -X POST http://localhost:8080/value -d '{"value":"test","type":"gossip"}'
