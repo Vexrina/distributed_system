@@ -66,7 +66,7 @@ func (n *Node) startHTTPServer(port string) {
 				Type:      req.Type,
 				Value:     req.Value,
 				SourceID:  n.ID,
-				GroupID:   req.GroupID,
+				GroupID:   n.GroupID,
 				Timestamp: time.Now().UnixNano(),
 				MessageID: messageID,
 			}
@@ -98,22 +98,6 @@ func (n *Node) startHTTPServer(port string) {
 				}()
 			case BroadCast:
 				log.Printf("Handling broadcast message for node %s", n.ID)
-				// Отправляем в Kafka топик для broadcast
-				go func() {
-					writer := kafka.NewWriter(kafka.WriterConfig{
-						Brokers:  []string{"kafka:29092"},
-						Topic:    "broadcast-" + n.GroupID,
-						Balancer: &kafka.LeastBytes{},
-					})
-					defer writer.Close()
-
-					jsonData, _ := json.Marshal(msg)
-					if err := writer.WriteMessages(context.Background(), kafka.Message{
-						Value: jsonData,
-					}); err != nil {
-						log.Printf("Failed to write broadcast message to Kafka: %v", err)
-					}
-				}()
 				n.handleBroadCast(msg)
 			case Gossip:
 				log.Printf("Handling gossip message for node %s", n.ID)

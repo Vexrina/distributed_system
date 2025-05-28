@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/IBM/sarama"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -97,6 +99,37 @@ func parseNeighbors(neighborsStr string) []string {
 	return strings.Split(neighborsStr, ",")
 }
 
+func createKafkaTopics(topics []string) error {
+	// Создаем конфигурацию для админа Kafka
+	config := sarama.NewConfig()
+	config.Version = sarama.V2_8_0_0
+
+	// Создаем админа Kafka
+	admin, err := sarama.NewClusterAdmin([]string{"kafka:29092"}, config)
+	if err != nil {
+		return fmt.Errorf("failed to create kafka admin: %v", err)
+	}
+	defer admin.Close()
+
+	// Создаем топики
+	for _, topic := range topics {
+		err := admin.CreateTopic(topic, &sarama.TopicDetail{
+			NumPartitions:     3,
+			ReplicationFactor: 1,
+		}, false)
+		if err != nil {
+			if err.Error() == "TopicAlreadyExistsError" {
+				log.Printf("Topic %s already exists, skipping creation", topic)
+				continue
+			}
+			return fmt.Errorf("failed to create topic %s: %v", topic, err)
+		}
+		log.Printf("Created Kafka topic: %s", topic)
+	}
+
+	return nil
+}
+
 func main() {
 	nodeID := os.Getenv("NODE_ID")
 	if nodeID == "" {
@@ -133,12 +166,26 @@ func main() {
 	// Ждем готовности Kafka
 	waitForKafka()
 
-	kafkaTopics := []string{"multicast", "broadcast-" + groupID}
+	// Создаем список топиков для всех групп
+	var kafkaTopics []string
+	kafkaTopics = append(kafkaTopics, "multicast") // добавляем топик для multicast
+	for i := 1; i <= numofGroups; i++ {
+		kafkaTopics = append(kafkaTopics, fmt.Sprintf("broadcast-group-%d", i))
+	}
+
+	// Создаем топики в Kafka
+	if err := createKafkaTopics(kafkaTopics); err != nil {
+		log.Printf("Warning: failed to create Kafka topics: %v", err)
+	}
+
+	// Формируем список топиков для текущего узла
+	nodeKafkaTopics := []string{"multicast", fmt.Sprintf("broadcast-group-%s", strings.TrimPrefix(groupID, "group-"))}
+
 	node := NewNode(
 		nodeID,
 		numOfNodes,
 		neighbors,
-		kafkaTopics,
+		nodeKafkaTopics,
 		groupID,
 		isSuperNode,
 		port,

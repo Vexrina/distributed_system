@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/segmentio/kafka-go"
 	"log"
 	"math/rand"
 	"strconv"
+
+	"github.com/segmentio/kafka-go"
 )
 
 func (n *Node) handleSingleCast(msg Message, needSend bool) {
@@ -76,28 +77,24 @@ func (n *Node) handleBroadCast(msg Message) {
 	if n.IsSuperNode {
 		for groupId := 1; groupId <= n.NumOfGroups; groupId++ {
 			groupStr := fmt.Sprint(groupId)
-			if n.GroupID == groupStr {
-				return
-			}
 			go func(groupStr string) {
 				newmsg := msg
 				newmsg.GroupID = groupStr
 				writer := kafka.NewWriter(kafka.WriterConfig{
 					Brokers:  []string{"kafka:29092"},
-					Topic:    "broadcast-" + newmsg.GroupID,
+					Topic:    fmt.Sprintf("broadcast-group-%s", groupStr),
 					Balancer: &kafka.LeastBytes{},
 				})
 				defer writer.Close()
-
+				// log.Printf("Sending broadcast message to Kafka with groupID: %s", groupStr)
 				jsonData, _ := json.Marshal(newmsg)
 				if err := writer.WriteMessages(context.Background(), kafka.Message{
 					Value: jsonData,
 				}); err != nil {
-					log.Printf("Failed to write broadcast message to Kafka: %v", err)
+					log.Printf("Failed to write broadcast message to Kafka topic: %s, error: %v", fmt.Sprintf("broadcast-group-%s", groupStr), err)
 				}
 			}(groupStr)
 		}
-
 	}
 
 	messageCounter.WithLabelValues(n.ID, string(BroadCast)).Inc()
