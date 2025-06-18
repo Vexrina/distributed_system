@@ -64,7 +64,7 @@ func (n *Node) updateValue(newValue string, msgType MessageType) {
 	log.Printf("Updating value to %s with type %s", newValue, msgType)
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	n.Value = newValue
+	n.Value = NewValue(newValue)
 
 	// Сбрасываем старые метрики для этого узла
 	n.resetMetrics()
@@ -86,7 +86,7 @@ func (n *Node) updateValue(newValue string, msgType MessageType) {
 	log.Printf("Node %s updated value to %s via %s", n.ID, newValue, msgType)
 }
 
-func (n *Node) getValue() string {
+func (n *Node) getValue() Value {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 	return n.Value
@@ -160,6 +160,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	percentOfLossStr := os.Getenv("PERCENT_OF_LOSS")
+	percentOfLoss, err := strconv.Atoi(percentOfLossStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	log.Printf("Starting node %s on port %s, group %s, super_node: %v", nodeID, port, groupID, isSuperNode)
 	log.Printf("Neighbors: %v", neighbors)
 
@@ -190,6 +196,7 @@ func main() {
 		isSuperNode,
 		port,
 		numofGroups,
+		percentOfLoss,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())

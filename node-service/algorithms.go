@@ -7,23 +7,35 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"github.com/segmentio/kafka-go"
 )
 
-func (n *Node) handleSingleCast(msg Message, needSend bool) {
-	log.Printf("Handling single cast message: %+v", msg)
+// Новая функция для обработки сообщений с отслеживанием времени
+func (n *Node) processMessageWithTiming(msg Message, msgType MessageType) {
 	messageKey := fmt.Sprintf("%s_%s", msg.SourceID, msg.MessageID)
 
+	// Проверяем потерю сообщения
+	if rand.Intn(100) < n.PercentOfLoss {
+		log.Printf("Message %s lost", messageKey)
+		return
+	}
+
+	// Проверяем, не обрабатывали ли мы уже это сообщение
 	n.mu.Lock()
+	defer n.mu.Unlock()
 	if n.processed[messageKey] {
-		n.mu.Unlock()
 		return
 	}
 	n.processed[messageKey] = true
-	n.mu.Unlock()
+}
 
-	n.updateValue(msg.Value, SingleCast)
+func (n *Node) handleSingleCast(msg Message, needSend bool) {
+	log.Printf("Handling single cast message: %+v", msg)
+
+	// Обрабатываем сообщение с отслеживанием времени
+	n.processMessageWithTiming(msg, SingleCast)
 
 	if needSend {
 		// Отправляем сообщение соседним узлам через HTTP
@@ -41,50 +53,32 @@ func (n *Node) handleSingleCast(msg Message, needSend bool) {
 			}(fmt.Sprintf("http://node%d:", portNum+1), fmt.Sprint(portStart+portNum))
 		}
 	}
-
-	messageCounter.WithLabelValues(n.ID, string(SingleCast)).Inc()
 }
 
 func (n *Node) handleMultiCast(msg Message) {
-	messageKey := fmt.Sprintf("%s_%s", msg.SourceID, msg.MessageID)
-
-	n.mu.Lock()
-	if n.processed[messageKey] {
-		n.mu.Unlock()
-		return
-	}
-	n.processed[messageKey] = true
-	n.mu.Unlock()
-
-	n.updateValue(msg.Value, MultiCast)
-	messageCounter.WithLabelValues(n.ID, string(MultiCast)).Inc()
+	// Обрабатываем сообщение с отслеживанием времени
+	n.processMessageWithTiming(msg, MultiCast)
 }
 
-func (n *Node) handleBroadCast(msg Message) {
-	messageKey := fmt.Sprintf("%s_%s", msg.SourceID, msg.MessageID)
+func (n *Node) handleBroadCast(msg Message, needSend bool) {
 
-	n.mu.Lock()
-	if n.processed[messageKey] {
-		n.mu.Unlock()
-		return
-	}
-	n.processed[messageKey] = true
-	n.mu.Unlock()
-
-	n.updateValue(msg.Value, BroadCast)
+	// Обрабатываем сообщение с отслеживанием времени
+	n.processMessageWithTiming(msg, BroadCast)
 
 	// Если это супер-узел, отправляем сообщение в соседние группы
-	if n.IsSuperNode {
+	if n.IsSuperNode || !msg.FromAnotherSuperNode {
 		for groupId := 1; groupId <= n.NumOfGroups; groupId++ {
 			groupStr := fmt.Sprint(groupId)
 			go func(groupStr string) {
 				newmsg := msg
 				newmsg.GroupID = groupStr
+				newmsg.FromAnotherSuperNode = true
 				writer := kafka.NewWriter(kafka.WriterConfig{
 					Brokers:  []string{"kafka:29092"},
 					Topic:    fmt.Sprintf("broadcast-group-%s", groupStr),
 					Balancer: &kafka.LeastBytes{},
 				})
+
 				defer writer.Close()
 				// log.Printf("Sending broadcast message to Kafka with groupID: %s", groupStr)
 				jsonData, _ := json.Marshal(newmsg)
@@ -95,47 +89,43 @@ func (n *Node) handleBroadCast(msg Message) {
 				}
 			}(groupStr)
 		}
+	} else if needSend {
+		go func(groupStr string) {
+			newmsg := msg
+			newmsg.GroupID = groupStr
+			newmsg.FromAnotherSuperNode = false
+			// Извлекаем номер группы из GroupID (например, из "group-1" получаем "1")
+			groupNumber := strings.TrimPrefix(n.GroupID, "group-")
+			writer := kafka.NewWriter(kafka.WriterConfig{
+				Brokers:  []string{"kafka:29092"},
+				Topic:    fmt.Sprintf("broadcast-group-%s", groupNumber),
+				Balancer: &kafka.LeastBytes{},
+			})
+			defer writer.Close()
+			// log.Printf("Sending broadcast message to Kafka with groupID: %s", groupStr)
+			jsonData, _ := json.Marshal(newmsg)
+			if err := writer.WriteMessages(context.Background(), kafka.Message{
+				Value: jsonData,
+			}); err != nil {
+				log.Printf("Failed to write broadcast message to Kafka topic: %s, error: %v", fmt.Sprintf("broadcast-group-%s", groupNumber), err)
+			}
+		}(n.GroupID)
 	}
-
-	messageCounter.WithLabelValues(n.ID, string(BroadCast)).Inc()
 }
 
 func (n *Node) handleGossip(msg Message) {
-	messageKey := fmt.Sprintf("%s_%s", msg.SourceID, msg.MessageID)
-
-	n.mu.Lock()
-	if n.processed[messageKey] {
-		n.mu.Unlock()
-		return
+	// Проверяем, получала ли уже эта нода сообщение
+	for _, id := range msg.Visited {
+		if id == n.ID {
+			return // Уже получала, не обрабатываем и не пересылаем
+		}
 	}
-	n.processed[messageKey] = true
-	n.mu.Unlock()
-
-	n.updateValue(msg.Value, Gossip)
-
-	// Отправляем сообщение случайному подмножеству соседей
-	if len(n.Neighbors) > 0 {
-		neighbors := make([]string, len(n.Neighbors))
-		copy(neighbors, n.Neighbors)
-		rand.Shuffle(len(neighbors), func(i, j int) {
-			neighbors[i], neighbors[j] = neighbors[j], neighbors[i]
-		})
-
-		// Отправляем примерно половине соседей (минимум 1)
-		numToSend := len(neighbors) / 2
-		if numToSend == 0 {
-			numToSend = 1
-		}
-
-		for i := 0; i < numToSend && i < len(neighbors); i++ {
-			go func(neighborURL string) {
-				newMsg := msg
-				newMsg.SourceID = n.ID
-				if err := n.sendHTTPMessage(neighborURL, newMsg); err != nil {
-					log.Printf("Failed to send gossip to %s: %v", neighborURL, err)
-				}
-			}(neighbors[i])
-		}
+	// Добавляем свой ID в список Visited
+	msg.Visited = append(msg.Visited, n.ID)
+	// Проверяем потерю сообщения
+	if rand.Intn(100) < n.PercentOfLoss {
+		log.Printf("Message %s lost", msg.Value)
+		return
 	}
 
 	maxNeighbors := 2 // слева и справа
@@ -165,12 +155,25 @@ func (n *Node) handleGossip(msg Message) {
 	for _, neighbor := range neighbors {
 		go func(neighborURL string) {
 			newMsg := msg
+			// Не отправляем, если этот сосед уже получал сообщение
+			for _, id := range newMsg.Visited {
+				if strings.HasSuffix(neighborURL, newMsg.SourceID) || id == extractNodeIDFromURL(neighborURL) {
+					return
+				}
+			}
 			newMsg.SourceID = n.ID
 			if err := n.sendHTTPMessage(neighborURL, newMsg); err != nil {
 				log.Printf("Failed to send single cast to %s: %v", neighborURL, err)
 			}
 		}(neighbor)
 	}
+}
 
-	messageCounter.WithLabelValues(n.ID, string(Gossip)).Inc()
+// Вспомогательная функция для извлечения ID ноды из URL
+func extractNodeIDFromURL(url string) string {
+	parts := strings.Split(url, ":")
+	if len(parts) > 1 {
+		return strings.TrimPrefix(parts[1], "//node")
+	}
+	return ""
 }

@@ -61,6 +61,7 @@ func (n *Node) startHTTPServer(port string) {
 			}
 			log.Printf("Decoded request: %+v", req)
 
+			n.Value = NewValue(req.Value)
 			messageID := fmt.Sprintf("%s_%d", n.ID, time.Now().UnixNano())
 			msg := Message{
 				Type:      req.Type,
@@ -98,7 +99,7 @@ func (n *Node) startHTTPServer(port string) {
 				}()
 			case BroadCast:
 				log.Printf("Handling broadcast message for node %s", n.ID)
-				n.handleBroadCast(msg)
+				n.handleBroadCast(msg, true)
 			case Gossip:
 				log.Printf("Handling gossip message for node %s", n.ID)
 				n.handleGossip(msg)
@@ -112,6 +113,14 @@ func (n *Node) startHTTPServer(port string) {
 				"status":     "ok",
 				"message_id": messageID,
 			})
+		} else if r.Method == http.MethodGet {
+			w.WriteHeader(http.StatusOK)
+			v := n.getValue()
+			json.NewEncoder(w).Encode(map[string]string{
+				"status":    "ok",
+				"value":     v.Value,
+				"timestamp": fmt.Sprint(v.Timestamp),
+			})
 		}
 	})
 
@@ -122,7 +131,7 @@ func (n *Node) startHTTPServer(port string) {
 				http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
 				return
 			}
-			n.Value = msg.Value
+			n.Value = NewValue(msg.Value)
 			switch msg.Type {
 			case SingleCast:
 				n.handleSingleCast(msg, false)

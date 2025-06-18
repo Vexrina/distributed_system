@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
+	"fmt"
 	"log"
+	"strings"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 func waitForKafka() {
@@ -62,14 +65,18 @@ func (n *Node) startKafkaConsumer(ctx context.Context) {
 
 	// Broadcast consumer
 	go func() {
+		// Извлекаем номер группы из GroupID (например, из "group-1" получаем "1")
+		groupNumber := strings.TrimPrefix(n.GroupID, "group-")
+		topicName := fmt.Sprintf("broadcast-group-%s", groupNumber)
+
 		reader := kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{"kafka:29092"},
-			Topic:   "broadcast-" + n.GroupID,
+			Topic:   topicName,
 			GroupID: n.ID,
 		})
 		defer reader.Close()
 
-		log.Printf("Starting broadcast consumer for node %s", n.ID)
+		log.Printf("Starting broadcast consumer for node %s on topic %s", n.ID, topicName)
 		for {
 			select {
 			case <-ctx.Done():
@@ -91,7 +98,7 @@ func (n *Node) startKafkaConsumer(ctx context.Context) {
 					continue
 				}
 
-				n.handleBroadCast(message)
+				n.handleBroadCast(message, false)
 			}
 		}
 	}()

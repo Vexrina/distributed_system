@@ -1,3 +1,5 @@
+
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -25,7 +27,6 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
@@ -61,8 +62,6 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
-
-  # Группа 1
   node1:
     build:
       context: ./node-service
@@ -71,8 +70,8 @@ services:
       - NODE_ID=node-1
       - PORT=8080
       - GROUP_ID=group-1
-      - IS_SUPER_NODE=true
-      - NUM_OF_NODES=6
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8080:8080"
@@ -84,7 +83,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
   node2:
     build:
       context: ./node-service
@@ -94,7 +92,7 @@ services:
       - PORT=8081
       - GROUP_ID=group-1
       - IS_SUPER_NODE=false
-      - NUM_OF_NODES=6
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8081:8081"
@@ -106,8 +104,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Группа 2
   node3:
     build:
       context: ./node-service
@@ -115,9 +111,9 @@ services:
     environment:
       - NODE_ID=node-3
       - PORT=8082
-      - GROUP_ID=group-2
-      - IS_SUPER_NODE=true
-      - NUM_OF_NODES=6
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8082:8082"
@@ -129,7 +125,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
   node4:
     build:
       context: ./node-service
@@ -137,9 +132,9 @@ services:
     environment:
       - NODE_ID=node-4
       - PORT=8083
-      - GROUP_ID=group-2
+      - GROUP_ID=group-1
       - IS_SUPER_NODE=false
-      - NUM_OF_NODES=6
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8083:8083"
@@ -151,8 +146,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Группа 3
   node5:
     build:
       context: ./node-service
@@ -160,9 +153,9 @@ services:
     environment:
       - NODE_ID=node-5
       - PORT=8084
-      - GROUP_ID=group-3
+      - GROUP_ID=group-1
       - IS_SUPER_NODE=true
-      - NUM_OF_NODES=6
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8084:8084"
@@ -174,7 +167,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
   node6:
     build:
       context: ./node-service
@@ -182,9 +174,9 @@ services:
     environment:
       - NODE_ID=node-6
       - PORT=8085
-      - GROUP_ID=group-3
-      - NUM_OF_NODES=6
+      - GROUP_ID=group-1
       - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
       - NUM_OF_GROUPS=3
     ports:
       - "8085:8085"
@@ -196,6 +188,1981 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+  node7:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-7
+      - PORT=8086
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8086:8086"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node8:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-8
+      - PORT=8087
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8087:8087"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node9:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-9
+      - PORT=8088
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8088:8088"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node10:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-10
+      - PORT=8089
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8089:8089"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8089/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node11:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-11
+      - PORT=8090
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8090:8090"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node12:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-12
+      - PORT=8091
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8091:8091"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node13:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-13
+      - PORT=8092
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8092:8092"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node14:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-14
+      - PORT=8093
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8093:8093"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node15:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-15
+      - PORT=8094
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8094:8094"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8094/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node16:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-16
+      - PORT=8095
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8095:8095"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8095/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node17:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-17
+      - PORT=8096
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8096:8096"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node18:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-18
+      - PORT=8097
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8097:8097"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8097/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node19:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-19
+      - PORT=8098
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8098:8098"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8098/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node20:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-20
+      - PORT=8099
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8099:8099"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8099/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node21:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-21
+      - PORT=8100
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8100:8100"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node22:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-22
+      - PORT=8101
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8101:8101"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node23:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-23
+      - PORT=8102
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8102:8102"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node24:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-24
+      - PORT=8103
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8103:8103"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node25:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-25
+      - PORT=8104
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8104:8104"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8104/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node26:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-26
+      - PORT=8105
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8105:8105"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8105/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node27:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-27
+      - PORT=8106
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8106:8106"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8106/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node28:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-28
+      - PORT=8107
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8107:8107"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8107/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node29:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-29
+      - PORT=8108
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8108:8108"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node30:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-30
+      - PORT=8109
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8109:8109"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8109/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node31:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-31
+      - PORT=8110
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8110:8110"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8110/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node32:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-32
+      - PORT=8111
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8111:8111"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8111/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node33:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-33
+      - PORT=8112
+      - GROUP_ID=group-1
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8112:8112"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8112/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node34:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-34
+      - PORT=8113
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8113:8113"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8113/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node35:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-35
+      - PORT=8114
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8114:8114"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8114/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node36:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-36
+      - PORT=8115
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8115:8115"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8115/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node37:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-37
+      - PORT=8116
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8116:8116"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8116/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node38:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-38
+      - PORT=8117
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8117:8117"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8117/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node39:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-39
+      - PORT=8118
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8118:8118"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8118/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node40:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-40
+      - PORT=8119
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8119:8119"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8119/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node41:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-41
+      - PORT=8120
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8120:8120"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8120/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node42:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-42
+      - PORT=8121
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8121:8121"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8121/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node43:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-43
+      - PORT=8122
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8122:8122"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8122/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node44:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-44
+      - PORT=8123
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8123:8123"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node45:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-45
+      - PORT=8124
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8124:8124"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8124/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node46:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-46
+      - PORT=8125
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8125:8125"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8125/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node47:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-47
+      - PORT=8126
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8126:8126"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8126/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node48:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-48
+      - PORT=8127
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8127:8127"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8127/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node49:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-49
+      - PORT=8128
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8128:8128"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8128/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node50:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-50
+      - PORT=8129
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8129:8129"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8129/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node51:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-51
+      - PORT=8130
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8130:8130"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8130/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node52:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-52
+      - PORT=8131
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8131:8131"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8131/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node53:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-53
+      - PORT=8132
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8132:8132"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8132/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node54:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-54
+      - PORT=8133
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8133:8133"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8133/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node55:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-55
+      - PORT=8134
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8134:8134"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8134/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node56:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-56
+      - PORT=8135
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8135:8135"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8135/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node57:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-57
+      - PORT=8136
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8136:8136"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8136/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node58:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-58
+      - PORT=8137
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8137:8137"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8137/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node59:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-59
+      - PORT=8138
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8138:8138"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8138/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node60:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-60
+      - PORT=8139
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8139:8139"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8139/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node61:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-61
+      - PORT=8140
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8140:8140"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8140/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node62:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-62
+      - PORT=8141
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8141:8141"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8141/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node63:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-63
+      - PORT=8142
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8142:8142"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8142/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node64:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-64
+      - PORT=8143
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8143:8143"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8143/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node65:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-65
+      - PORT=8144
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8144:8144"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8144/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node66:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-66
+      - PORT=8145
+      - GROUP_ID=group-2
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8145:8145"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8145/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node67:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-67
+      - PORT=8146
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8146:8146"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8146/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node68:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-68
+      - PORT=8147
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8147:8147"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8147/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node69:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-69
+      - PORT=8148
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8148:8148"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8148/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node70:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-70
+      - PORT=8149
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8149:8149"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8149/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node71:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-71
+      - PORT=8150
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8150:8150"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8150/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node72:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-72
+      - PORT=8151
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8151:8151"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8151/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node73:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-73
+      - PORT=8152
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8152:8152"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8152/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node74:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-74
+      - PORT=8153
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8153:8153"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8153/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node75:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-75
+      - PORT=8154
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8154:8154"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8154/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node76:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-76
+      - PORT=8155
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8155:8155"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8155/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node77:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-77
+      - PORT=8156
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8156:8156"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8156/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node78:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-78
+      - PORT=8157
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8157:8157"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8157/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node79:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-79
+      - PORT=8158
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8158:8158"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8158/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node80:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-80
+      - PORT=8159
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8159:8159"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8159/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node81:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-81
+      - PORT=8160
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8160:8160"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8160/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node82:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-82
+      - PORT=8161
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8161:8161"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8161/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node83:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-83
+      - PORT=8162
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8162:8162"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8162/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node84:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-84
+      - PORT=8163
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8163:8163"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8163/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node85:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-85
+      - PORT=8164
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8164:8164"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8164/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node86:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-86
+      - PORT=8165
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8165:8165"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8165/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node87:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-87
+      - PORT=8166
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8166:8166"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8166/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node88:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-88
+      - PORT=8167
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8167:8167"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8167/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node89:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-89
+      - PORT=8168
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8168:8168"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8168/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node90:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-90
+      - PORT=8169
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8169:8169"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8169/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node91:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-91
+      - PORT=8170
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8170:8170"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8170/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node92:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-92
+      - PORT=8171
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8171:8171"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8171/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node93:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-93
+      - PORT=8172
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8172:8172"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8172/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node94:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-94
+      - PORT=8173
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8173:8173"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8173/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node95:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-95
+      - PORT=8174
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=true
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8174:8174"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8174/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node96:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-96
+      - PORT=8175
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8175:8175"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8175/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node97:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-97
+      - PORT=8176
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8176:8176"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8176/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node98:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-98
+      - PORT=8177
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8177:8177"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8177/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node99:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-99
+      - PORT=8178
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8178:8178"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8178/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  node100:
+    build:
+      context: ./node-service
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ID=node-100
+      - PORT=8179
+      - GROUP_ID=group-3
+      - IS_SUPER_NODE=false
+      - NUM_OF_NODES=100
+      - NUM_OF_GROUPS=3
+    ports:
+      - "8179:8179"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8179/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 
 volumes:
   grafana-storage:

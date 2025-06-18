@@ -84,6 +84,7 @@ services:
       - IS_SUPER_NODE={{ if isSuperNode $nodeID }}true{{ else }}false{{ end }}
       - NUM_OF_NODES={{ $totalNodes }}
       - NUM_OF_GROUPS={{ $numGroups }}
+      - PERCENT_OF_LOSS=0
     ports:
       - "{{ add 8079 $nodeID }}:{{ add 8079 $nodeID }}"
     depends_on:
